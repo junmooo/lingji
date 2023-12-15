@@ -1,0 +1,8 @@
+server:
+  port: 8089
+  ssl:
+    enabled: true
+    key-store: classpath:ssl/qingbing.top.jks
+    key-store-password: sa033553yg31
+    keyStoreType: JKS
+    keyAlias: qingbing.top
