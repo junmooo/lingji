@@ -1,8 +1,36 @@
 server:
   port: 8089
-  ssl:
-    enabled: true
-    key-store: classpath:ssl/qingbing.top.jks
-    key-store-password: sa033553yg31
-    keyStoreType: JKS
-    keyAlias: qingbing.top
+#  ssl:
+#    enabled: true
+#    key-store: classpath:ssl/qingbing.top.jks
+#    key-store-password: sa033553yg31
+#    keyStoreType: JKS
+#    keyAlias: qingbing.top
+
+spring:
+  #  数据库配置
+  datasource:
+    username: qingbing
+    password: 2275237
+    url: jdbc:mysql://192.168.10.3:3306/aigc
+#    url: jdbc:mysql://qingbing.top:13306/aigc
+    type: com.alibaba.druid.pool.DruidDataSource
+    #    配置druid
+    druid:
+      max-active: 20
+      initial-size: 5
+      min-idle: 10
+      max-wait: 60000
+  # servlet
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 200MB
+#配置日志
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+env:
+  #    dir-path: "/Users/junmooo/files/"
+  flux-path: "/www/wwwroot/files/flux/"

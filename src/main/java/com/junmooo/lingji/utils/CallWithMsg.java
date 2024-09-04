@@ -11,10 +11,14 @@ import com.alibaba.dashscope.exception.ApiException;
 import com.alibaba.dashscope.exception.InputRequiredException;
 import com.alibaba.dashscope.exception.NoApiKeyException;
 import com.alibaba.fastjson2.JSONObject;
+import com.junmooo.lingji.serivce.AigcService;
 import jakarta.websocket.Session;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.Semaphore;
 
 public class CallWithMsg {
@@ -39,7 +43,12 @@ public class CallWithMsg {
         return gen.call(param).getOutput().getChoices().get(0).getMessage().getContent();
     }
 
+    @Autowired
+    private AigcService aigcService;
     public static void callWithStreamMsg(ArrayList<JSONObject> messages, Session session) throws NoApiKeyException, ApiException, InputRequiredException, InterruptedException {
+
+        final JSONObject currentDialog = new JSONObject();
+        String currentQuestion = "";
 
         Generation gen = new Generation();
         MessageManager msgManager = new MessageManager(10);
@@ -48,6 +57,8 @@ public class CallWithMsg {
         messages.forEach(e -> {
             Object answer = e.get("answer");
             Object question = e.get("question");
+            currentDialog.put("question", question);
+
             if (question != null) {
                 msgManager.add(Message.builder().role(Role.USER.getValue()).content(question.toString()).build());
             }
@@ -69,7 +80,9 @@ public class CallWithMsg {
                     JSONObject jsonObject = new JSONObject();
                     jsonObject.put("requestId", message.getRequestId());
                     jsonObject.put("content", message.getOutput().getChoices().get(0).getMessage().getContent());
+                    currentDialog.put("response", message.getOutput().getChoices().get(0).getMessage().getContent());
                     session.getBasicRemote().sendText(jsonObject.toJSONString());
+
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }

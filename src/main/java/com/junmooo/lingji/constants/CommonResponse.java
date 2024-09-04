@@ -27,6 +27,13 @@ public class CommonResponse {
         res.put("data", data);
         return res;
     }
+    public static JSONObject error(ErrorCode errorCode) {
+        JSONObject res = new JSONObject();
+        res.put("code", errorCode.getCode());
+        res.put("msg", errorCode.getMessage());
+        res.put("data", null);
+        return res;
+    }
     public static JSONObject error(int code, String msg) {
         JSONObject res = new JSONObject();
         res.put("code", code);
@@ -34,5 +41,4 @@ public class CommonResponse {
         res.put("data", null);
         return res;
     }
-
 }

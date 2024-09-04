@@ -6,7 +6,10 @@ import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import com.junmooo.lingji.constants.CommonResponse;
 import com.junmooo.lingji.constants.ErrorCode;
+import com.junmooo.lingji.model.Dict;
+import com.junmooo.lingji.serivce.DictService;
 import com.junmooo.lingji.utils.CallWithMsg;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
@@ -15,17 +18,37 @@ import java.util.ArrayList;
 @RequestMapping("ask")
 public class HelloController {
 
-    @PostMapping ("me")
+
+    @Autowired
+    private DictService dictService;
+
+    @PostMapping("me")
     public JSONObject world(@RequestBody ArrayList<JSONObject> messages) {
         String res;
         try {
             System.out.println("hello: i`m in");
             res = CallWithMsg.callWithMessage(messages);
         } catch (NoApiKeyException e) {
-            return CommonResponse.error(ErrorCode.UNKNOWN_ERROR.getCode(),ErrorCode.UNKNOWN_ERROR.getMessage());
+            return CommonResponse.error(ErrorCode.UNKNOWN_ERROR.getCode(), ErrorCode.UNKNOWN_ERROR.getMessage());
         } catch (InputRequiredException e) {
-            return CommonResponse.error(ErrorCode.NO_API_KEY_ERROR.getCode(),ErrorCode.NO_API_KEY_ERROR.getMessage());
+            return CommonResponse.error(ErrorCode.NO_API_KEY_ERROR.getCode(), ErrorCode.NO_API_KEY_ERROR.getMessage());
         }
         return CommonResponse.success(res);
     }
+
+    @PostMapping("dict-save")
+    public JSONObject saveDict(@RequestBody Dict dict) {
+        try {
+            System.out.println(dict.toString());
+            if (dictService.save(dict) == 1) {
+                return CommonResponse.success();
+            }
+            return CommonResponse.error(ErrorCode.DATABASE_ERROR);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return CommonResponse.error(ErrorCode.NO_API_KEY_ERROR.getCode(), ErrorCode.NO_API_KEY_ERROR.getMessage());
+        }
+    }
+
+
 }
