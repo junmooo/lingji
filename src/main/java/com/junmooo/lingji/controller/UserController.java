@@ -34,7 +34,7 @@ public class UserController {
             if (!user.getPwd().equals(retUser.getPwd())) {
                 return CommonResponse.error(ErrorCode.LOGIN_FAIL);
             }
-            String token = TokenUtils.generateUserToken(UserToken.builder().id(retUser.getId()).name(retUser.getName()).email(retUser.getEmail()).avatar(retUser.getAvatar()).build(), 60);
+            String token = TokenUtils.generateUserToken(UserToken.builder().id(retUser.getId()).name(retUser.getName()).email(retUser.getEmail()).avatar(retUser.getAvatar()).build(), 6000);
             JSONObject res = new JSONObject();
             res.put("user", retUser);
             res.put("token", token);
@@ -57,9 +57,9 @@ public class UserController {
     public JSONObject register(@RequestBody User user) {
         try {
             User retUser = userService.add(user);
-            JSONObject res = CommonResponse.success(retUser);
-            return res;
+            return CommonResponse.success(retUser);
         } catch (Exception e) {
+            e.printStackTrace();
             return CommonResponse.error(ErrorCode.SQL_ERROR);
         }
     }

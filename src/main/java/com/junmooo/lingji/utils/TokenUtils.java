@@ -67,16 +67,16 @@ public class TokenUtils {
         JwtClaims processedClaims = jwtConsumer.processToClaims(token);
         UserToken userToken = UserToken.builder().id(processedClaims.getClaimValue("ID").toString())
                 .name(processedClaims.getClaimValue("NAME").toString())
-                .email(processedClaims.getClaimValue("EMAIL").toString())
-                .avatar(processedClaims.getClaimValue("AVATAR").toString())
+                .id(processedClaims.getClaimValue("ID").toString())
                 .build();
         return userToken;
     }
 
     public static void main(String[] agars) throws Exception {
-//        OperToken userToken = new OperToken("1", "junmo", "超级管理员名称");
-//        String token = generateOperToken(userToken, 60);
-        UserToken infoFromToken = getInfoFromUserToken("eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJqdW5tb29vIiwiSUQiOiI0NDdmODM4Yy0yYzkwLTQ4NTMtOGVjMy0zMGJkN2E2OTk4YWMiLCJOQU1FIjoianVubW9vbyIsIkVNQUlMIjoicWluZ2JndW9AcGF5cGFsLmNvbSIsIkFWQVRBUiI6bnVsbCwiZXhwIjoxNjc3NDY1NDM1fQ.9bU3x3wpwhzVcww1YdQOmi7Xr75_S_6rrs9XUB9BjxU");
+        UserToken userToken = new UserToken("1", "junmo", "xxx@qq.com", "http://www.baidu.com");
+        String token = generateUserToken(userToken, 6000);
+        System.out.println(token);
+        UserToken infoFromToken = getInfoFromUserToken(token);
         System.out.println(infoFromToken);
     }
 }

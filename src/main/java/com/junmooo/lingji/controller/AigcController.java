@@ -1,7 +1,9 @@
 package com.junmooo.lingji.controller;
 
-import com.alibaba.dashscope.aigc.imagesynthesis.*;
-import com.alibaba.fastjson2.JSONArray;
+import com.alibaba.dashscope.aigc.imagesynthesis.ImageSynthesis;
+import com.alibaba.dashscope.aigc.imagesynthesis.ImageSynthesisResult;
+import com.alibaba.dashscope.exception.ApiException;
+import com.alibaba.dashscope.exception.NoApiKeyException;
 import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.junmooo.lingji.constants.CommonResponse;
@@ -9,21 +11,15 @@ import com.junmooo.lingji.constants.ErrorCode;
 import com.junmooo.lingji.entities.Text2ImgRequest;
 import com.junmooo.lingji.model.Dialogue;
 import com.junmooo.lingji.model.TextToImg;
+import com.junmooo.lingji.model.UserToken;
 import com.junmooo.lingji.serivce.AigcService;
+import com.junmooo.lingji.utils.TokenUtils;
+import jakarta.servlet.http.HttpServletRequest;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.bind.annotation.RequestBody;
 
-import java.io.File;
 import java.io.IOException;
-import java.net.URL;
-import java.util.List;
-import java.util.Map;
-
-import com.alibaba.dashscope.exception.ApiException;
-import com.alibaba.dashscope.exception.NoApiKeyException;
 
 @RestController
 @RequestMapping("aigc")
@@ -55,9 +51,10 @@ public class AigcController {
     }
 
     @PostMapping("text-2-img")
-    public JSONObject text2Img(@RequestBody Text2ImgRequest request) {
+    public JSONObject text2Img(@RequestBody Text2ImgRequest request, HttpServletRequest httpServletRequest) {
         try {
-            return aigcService.basicCall(request);
+            String id = TokenUtils.getInfoFromUserToken(httpServletRequest.getHeader("token")).getId();
+            return aigcService.basicCall(request, id);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -65,8 +62,10 @@ public class AigcController {
 
 
     @PostMapping("save-text-2-img")
-    public JSONObject saveText2Img(@RequestBody TextToImg textToImg) {
+    public JSONObject saveText2Img(@RequestBody TextToImg textToImg, HttpServletRequest request) {
         try {
+            String id = TokenUtils.getInfoFromUserToken(request.getHeader("token")).getId();
+            textToImg.setUserId(id);
             if (aigcService.saveTextToImg(textToImg) == 1) {
                 return CommonResponse.success();
             }
@@ -77,18 +76,21 @@ public class AigcController {
     }
 
     @GetMapping("text-2-img-history")
-    public JSONObject text2ImgHistory(@Param("pageIndex") Integer pageIndex, @Param("pageSize") Integer pageSize) {
+    public JSONObject text2ImgHistory(@Param("pageIndex") Integer pageIndex, @Param("pageSize") Integer pageSize, HttpServletRequest request) {
         try {
-            return CommonResponse.success(aigcService.queryList(pageIndex, pageSize));
+            String id = TokenUtils.getInfoFromUserToken(request.getHeader("token")).getId();
+            return CommonResponse.success(aigcService.queryList(pageIndex, pageSize, id));
         } catch (Exception e) {
             return CommonResponse.error(ErrorCode.DATABASE_ERROR);
         }
     }
 
     @GetMapping("get-dialogues")
-    public JSONObject getDialogue(@Param("pageIndex") Integer pageIndex, @Param("pageSize") Integer pageSize) throws NoApiKeyException, IOException {
+    public JSONObject getDialogue(@Param("pageIndex") Integer pageIndex, @Param("pageSize") Integer pageSize, HttpServletRequest request) throws NoApiKeyException, IOException {
         try {
-            IPage<Dialogue> dialogues = aigcService.getDialogues(pageIndex, pageSize);
+            UserToken token = TokenUtils.getInfoFromUserToken(request.getHeader("token"));
+
+            IPage<Dialogue> dialogues = aigcService.getDialogues(pageIndex, pageSize, token.getId());
             return CommonResponse.success(dialogues);
         } catch (Exception e) {
             throw new RuntimeException(e);

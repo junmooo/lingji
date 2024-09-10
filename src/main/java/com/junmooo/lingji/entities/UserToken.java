@@ -1,12 +1,10 @@
-package com.junmooo.lingji.model;
+package com.junmooo.lingji.entities;
 
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 
 @Data
 @Builder
-@AllArgsConstructor
 public class UserToken {
     private String id;
     private String name;

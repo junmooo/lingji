@@ -14,7 +14,6 @@ import com.alibaba.dashscope.exception.NoApiKeyException;
 import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.junmooo.lingji.entities.Text2ImgRequest;
 import com.junmooo.lingji.mapper.aigc.DialogueMapper;
@@ -26,8 +25,6 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 import org.apache.commons.io.FileUtils;
-import org.apache.ibatis.session.ResultContext;
-import org.apache.ibatis.session.ResultHandler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -35,7 +32,6 @@ import org.springframework.stereotype.Service;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -97,7 +93,7 @@ public class AigcService {
         return jsonObject;
     }
 
-    public JSONObject basicCall(Text2ImgRequest req) throws ApiException, NoApiKeyException, IOException {
+    public JSONObject basicCall(Text2ImgRequest req, String userId) throws ApiException, NoApiKeyException, IOException {
         ImageSynthesis is = new ImageSynthesis();
         String MODEL = "flux-schnell";
 
@@ -133,6 +129,7 @@ public class AigcService {
                         textToImg.setSeed(req.getSeed());
                         textToImg.setSteps(req.getSteps());
                         textToImg.setImgId(extractUUID(result.getOutput().getResults().get(0).get("url")));
+                        textToImg.setUserId(userId);
                         textToImg.setCreateTime(System.currentTimeMillis());
                         textToImgMapper.insert(textToImg);
                     }
@@ -166,22 +163,24 @@ public class AigcService {
         return textToImgMapper.insert(textToImg);
     }
 
-    public IPage<TextToImg> queryList(Integer pageIndex, Integer pageSize) {
+    public IPage<TextToImg> queryList(Integer pageIndex, Integer pageSize, String id) {
         IPage<TextToImg> page = new Page<>(pageIndex, pageSize);
         QueryWrapper<TextToImg> qw = new QueryWrapper<>();
         qw.orderByDesc("create_time");
+        qw.eq("user_id", id);
         return textToImgMapper.selectPage(page, qw);
     }
 
-    public IPage<Dialogue> getDialogues(Integer pageIndex, Integer pageSize) {
+    public IPage<Dialogue> getDialogues(Integer pageIndex, Integer pageSize, String id) {
         IPage<Dialogue> page = new Page<>(pageIndex, pageSize);
         QueryWrapper<Dialogue> qw = new QueryWrapper<>();
         qw.orderByDesc("create_time");
+        qw.eq("user_id", id);
         return dialogueMapper.selectPage(page,qw);
     }
 
-    public int saveDialogue(Dialogue dialogue) {
-        return dialogueMapper.insert(dialogue);
+    public void saveDialogue(Dialogue dialogue) {
+        dialogueMapper.insert(dialogue);
     }
 
     public void callWithStreamMsg(ArrayList<JSONObject> messages, Session session, String userId) throws NoApiKeyException, ApiException, InputRequiredException, InterruptedException {

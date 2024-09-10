@@ -7,10 +7,10 @@ import lombok.Data;
 
 @Data
 @Builder
-@TableName("USER")
+@TableName("user")
 public class User {
 
-    @TableId(value = "ID")
+    @TableId(value = "id")
     private String id;
     private String pwd;
     private String name;
