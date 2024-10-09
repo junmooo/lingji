@@ -21,6 +21,7 @@ import com.junmooo.lingji.mapper.aigc.TextToImgMapper;
 import com.junmooo.lingji.model.Dialogue;
 import com.junmooo.lingji.model.TextToImg;
 import jakarta.websocket.Session;
+import lombok.SneakyThrows;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -28,6 +29,7 @@ import org.apache.commons.io.FileUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.File;
 import java.io.IOException;
@@ -236,6 +238,67 @@ public class AigcService {
                 System.out.println("Completed");
                 saveDialogue(currentDialog);
                 session.getAsyncRemote().sendText("!$over$!");
+                semaphore.release();
+            }
+        });
+        semaphore.acquire();
+    }
+
+    public void callWithStreamMsgSSE(ArrayList<JSONObject> messages, String userId, SseEmitter emitter) throws NoApiKeyException, ApiException, InputRequiredException, InterruptedException {
+
+        final Dialogue currentDialog = new Dialogue();
+        String currentQuestion = "";
+
+        Generation gen = new Generation();
+        MessageManager msgManager = new MessageManager(10);
+        Message systemMsg = Message.builder().role(Role.SYSTEM.getValue()).content("You are a helpful assistant.").build();
+        msgManager.add(systemMsg);
+        messages.forEach(e -> {
+            Object answer = e.get("answer");
+            Object question = e.get("question");
+            currentDialog.setQuestion(question.toString());
+
+            msgManager.add(Message.builder().role(Role.USER.getValue()).content(question.toString()).build());
+            if (answer != null) {
+                msgManager.add(Message.builder().role(Role.ASSISTANT.getValue()).content(answer.toString()).build());
+            }
+        });
+        QwenParam param = QwenParam.builder().model(Generation.Models.QWEN_PLUS).messages(msgManager.get()).resultFormat(QwenParam.ResultFormat.MESSAGE).topP(0.8).enableSearch(true).build();
+
+        Semaphore semaphore = new Semaphore(0);
+        gen.streamCall(param, new ResultCallback<GenerationResult>() {
+
+            @Override
+            public void onEvent(GenerationResult message) {
+
+                try {
+                    JSONObject jsonObject = new JSONObject();
+                    jsonObject.put("requestId", message.getRequestId());
+                    jsonObject.put("content", message.getOutput().getChoices().get(0).getMessage().getContent());
+                    currentDialog.setResponse(message.getOutput().getChoices().get(0).getMessage().getContent());
+                    currentDialog.setCreateTime(System.currentTimeMillis());
+                    currentDialog.setRequestId(message.getRequestId());
+                    currentDialog.setUserId(userId);
+                    emitter.send(jsonObject.toJSONString());
+
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
+            @Override
+            public void onError(Exception err) {
+                System.out.println(String.format("Exception: %s", err.getMessage()));
+                semaphore.release();
+            }
+
+            @SneakyThrows
+            @Override
+            public void onComplete() {
+                System.out.println("Completed");
+                saveDialogue(currentDialog);
+                emitter.send("!$over$!");
+                emitter.complete();
                 semaphore.release();
             }
         });

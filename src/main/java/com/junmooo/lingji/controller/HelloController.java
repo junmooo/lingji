@@ -11,11 +11,14 @@ import com.junmooo.lingji.serivce.DictService;
 import com.junmooo.lingji.utils.CallWithMsg;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.io.IOException;
 import java.util.ArrayList;
 
 @RestController
 @RequestMapping("ask")
+@CrossOrigin(origins = "*")
 public class HelloController {
 
 
@@ -50,5 +53,29 @@ public class HelloController {
         }
     }
 
+    @GetMapping("sse")
+    public SseEmitter sse() {
+        SseEmitter emitter = new SseEmitter();
+
+        new Thread(() -> {
+            try {
+                emitter.send("Message 1: Hello, this is the first message.");
+                Thread.sleep(1000); // 1 second delay
+
+                emitter.send("Message 2: Here comes the second message.");
+                Thread.sleep(1000); // 1 second delay
+
+                emitter.send("Message 3: Finally, this is the third message.");
+                emitter.send("$Es-end$");
+                emitter.complete();
+            } catch (IOException e) {
+                emitter.completeWithError(e);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }).start();
+
+        return emitter;
+    }
 
 }

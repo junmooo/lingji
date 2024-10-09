@@ -3,6 +3,7 @@ package com.junmooo.lingji.controller;
 import com.alibaba.dashscope.aigc.imagesynthesis.ImageSynthesis;
 import com.alibaba.dashscope.aigc.imagesynthesis.ImageSynthesisResult;
 import com.alibaba.dashscope.exception.ApiException;
+import com.alibaba.dashscope.exception.InputRequiredException;
 import com.alibaba.dashscope.exception.NoApiKeyException;
 import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -18,8 +19,10 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
+import java.util.ArrayList;
 
 @RestController
 @RequestMapping("aigc")
@@ -55,6 +58,25 @@ public class AigcController {
         try {
             String id = TokenUtils.getInfoFromUserToken(httpServletRequest.getHeader("token")).getId();
             return aigcService.basicCall(request, id);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @PostMapping("t-2-t")
+    public SseEmitter sse(@RequestBody ArrayList<JSONObject> messages, HttpServletRequest request) {
+        SseEmitter emitter = new SseEmitter();
+        try {
+            String id = TokenUtils.getInfoFromUserToken(request.getHeader("token")).getId();
+            new Thread(() -> {
+                try {
+                    aigcService.callWithStreamMsgSSE(messages, id, emitter);
+                } catch (InterruptedException | InputRequiredException | NoApiKeyException e) {
+                    throw new RuntimeException(e);
+                }
+            }).start();
+
+            return emitter;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
